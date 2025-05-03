@@ -11,6 +11,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: 'Inscription réussie', data: newSubscriber });
     await sendConfirmationEmail(email, name);
 
+    res.status(201).json({ message: 'Inscription réussie', data: newSubscriber });
   } catch (err) {
     if (err.code === 11000) {
       res.status(400).json({ error: 'Email déjà inscrit' });
