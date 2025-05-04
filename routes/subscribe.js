@@ -2,10 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Subscriber = require('../models/subscriber');
 const sendConfirmationEmail = require('../utils/mailer');
-const auth = require('../middleware/authMiddleware');
-
-
-router.use(auth);
 
 router.post('/', async (req, res) => {
   try {
