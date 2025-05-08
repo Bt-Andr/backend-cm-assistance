@@ -20,7 +20,6 @@ app.use('/api/publications', publicationRoutes);
 app.use('/api/subscribe', subscribeRoutes);
 app.use("/api/dashboard", require("./routes/dashboard"));
 
-
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB connecté'))
