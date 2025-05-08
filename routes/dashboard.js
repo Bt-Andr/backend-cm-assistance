@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
+const user = require("../models/user");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await user.findById(req.user.userId);
 
     res.json({
       stats: {
