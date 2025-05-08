@@ -2,6 +2,7 @@ const express = require('express');
 const Publication = require('../models/publication');
 const auth = require('../middleware/authMiddleware');
 const router = express.Router();
+const verifyToken = require('../middleware/verifyToken');
 
 router.post('/', verifyToken, async (req, res) => {
   const publication = await Publication.create({ ...req.body, user: req.userId });
