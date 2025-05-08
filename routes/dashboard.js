@@ -4,7 +4,7 @@ const verifyToken = require("../middleware/verifyToken");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const {name, userId, email } = req.user;
+    const {userName, userId, email } = req.user;
 
     res.json({
       stats: {
@@ -29,7 +29,7 @@ router.get("/", verifyToken, async (req, res) => {
       ],
       user: {
         id: userId,
-        name: name,
+        name: userName,
         email: email
       }
     });
