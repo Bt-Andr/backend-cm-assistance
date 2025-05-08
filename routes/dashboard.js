@@ -4,7 +4,7 @@ const verifyToken = require("../middleware/verifyToken");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const {userName, userId, email } = req.user;
+    const user = await User.findById(req.user.userId);
 
     res.json({
       stats: {
@@ -28,9 +28,9 @@ router.get("/", verifyToken, async (req, res) => {
         }
       ],
       user: {
-        id: userId,
-        name: userName,
-        email: email
+        id: user._id,
+        email: user.email,
+        name: user.name
       }
     });
   } catch (err) {
