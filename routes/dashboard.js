@@ -2,7 +2,6 @@
 const express = require('express');
 const verifyToken = require('../middleware/authMiddleware');
 const router = express.Router();
-const verifyToken = require('../middleware/verifyToken');
 
 router.get("/", verifyToken, async (req, res) => {
   // Simule ou récupère des vraies données
