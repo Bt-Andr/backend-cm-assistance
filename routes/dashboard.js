@@ -1,11 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
-const user = require("../models/user");
+const User = require("../models/user");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
     const user = await user.findById(req.user.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
 
     res.json({
       stats: {
@@ -14,7 +18,7 @@ router.get("/", verifyToken, async (req, res) => {
         resolutionRate: "92%",
         newClients: 3
       },
-      activity: [
+      activities: [
         {
           title: "Connexion réussie",
           description: "Bienvenue sur CM Assistance",
