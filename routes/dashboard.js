@@ -8,6 +8,11 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     const userId = req.user.userId;
 
+    // Période précédente (1 jour)
+    const now = new Date();
+    const lastDay = new Date();
+    lastDay.setDate(now.getDate() - 1);
+
     // Récupération des tickets de l'utilisateur
     const tickets = await Ticket.find({ user: userId }); // <-- adapte ici si besoin
 
@@ -15,6 +20,24 @@ router.get("/", verifyToken, async (req, res) => {
     const closedTickets = tickets.filter(t => t.status === "closed").length;
     const pendingTickets = tickets.filter(t => t.status === "pending").length;
     const allResolved = tickets.filter(t => t.resolvedAt);
+
+    // Tickets ouverts le jour precedent
+    const prevTickets = await Ticket.find({
+    user: userId,
+    status: "open",
+    createdAt: { $gte: lastDay, $lt: now }
+    });
+    const prevOpenTickets = prevTickets.length;
+
+    // Calcul du trend
+    let openTicketsTrend = "0%";
+    let openTicketsIsPositive = true;
+    if (prevOpenTickets > 0) {
+    const diff = openTickets - prevOpenTickets;
+    const percent = Math.round((diff / prevOpenTickets) * 100);
+    openTicketsTrend = (percent > 0 ? "+" : "") + percent + "%";
+    openTicketsIsPositive = percent >= 0;
+    }
 
     // Temps moyen de réponse estimé (temps entre création et résolution)
     let avgResponseTime = "N/A";
@@ -30,9 +53,65 @@ router.get("/", verifyToken, async (req, res) => {
       const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
       avgResponseTime = `${hours}h ${minutes}m`;
     }
+    // Tickets resolu aujourd'hui
+    now.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const todayResolved = tickets.filter(
+        t => t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow
+    );
+    const avgTodayMs = todayResolved.length > 0
+    ? todayResolved.reduce((acc, t) => acc + (new Date(t.resolvedAt) - new Date(t.createdAt)), 0) / todayResolved.length
+    : 0;
+
+    // Tickets résolus hier
+    lastDay.setDate(now.getDate() - 1);
+    
+    const yesterdayResolved = tickets.filter(
+        t => t.resolvedAt && t.resolvedAt >= yesterday && t.resolvedAt < today
+    );
+    const avgYesterdayMs = yesterdayResolved.length > 0
+    ? yesterdayResolved.reduce((acc, t) => acc + (new Date(t.resolvedAt) - new Date(t.createdAt)), 0) / yesterdayResolved.length
+    : 0;
+
+    // Calcul du trend avgResponseTimeTrend
+    let avgResponseTimeTrend = "0%";
+    let avgResponseTimeIsPositive = true;
+    if (avgYesterdayMs > 0) {
+        const diff = avgTodayMs - avgYesterdayMs;
+        const percent = Math.round((diff / avgYesterdayMs) * 100);
+        avgResponseTimeTrend = (percent > 0 ? "+" : "") + percent + "%";
+        avgResponseTimeIsPositive = percent <= 0; // une baisse est positive (temps de réponse plus court)
+    }
 
     // Taux de résolution
     const resolutionRate = tickets.length > 0 ? `${Math.round((closedTickets / tickets.length) * 100)}%` : "0%";
+
+    // Tickets résolus aujourd'hui
+    const todayClosed = tickets.filter(
+      t => t.status === "closed" && t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow ).length;
+    const todayTotal = tickets.filter( t => t.createdAt >= today && t.createdAt < tomorrow ).length;
+    const resolutionRateToday = todayTotal > 0 ? Math.round((todayClosed / todayTotal) * 100) : 0;
+
+    // Tickets résolus aujourd'hui
+    const yesterdayClosed = tickets.filter(
+      t => t.status === "closed" && t.resolvedAt && t.resolvedAt >= yesterday && t.resolvedAt < today
+    ).length;
+    const yesterdayTotal = tickets.filter( t => t.createdAt >= yesterday && t.createdAt < today ).length;
+    const resolutionRateYesterday = yesterdayTotal > 0 ? Math.round((yesterdayClosed / yesterdayTotal) * 100) : 0;
+
+    // Calcule le trend
+    let resolutionRateTrend = "0%";
+    let resolutionRateIsPositive = true;
+    if (resolutionRateYesterday > 0) {
+      const diff = resolutionRateToday - resolutionRateYesterday;
+      const percent = Math.round((diff / resolutionRateYesterday) * 100);
+      resolutionRateTrend = (percent > 0 ? "+" : "") + percent + "%";
+      resolutionRateIsPositive = percent >= 0;
+    }
+
+    
 
     // Clients ajoutés par l'utilisateur (si applicable)
     const newClients = await User.countDocuments({ referredBy: userId }); // <-- adapte ici si besoin
@@ -42,12 +121,50 @@ router.get("/", verifyToken, async (req, res) => {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
 
+    // Calcule le nombre de nouveaux clients aujourd’hui
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const newClientsToday = await User.countDocuments({
+      referredBy: userId,
+      createdAt: { $gte: today, $lt: tomorrow }
+    });
+
+    //Calcule le nombre de nouveaux clients hier
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    
+    const newClientsYesterday = await User.countDocuments({
+      referredBy: userId,
+      createdAt: { $gte: yesterday, $lt: today }
+    });
+
+    //Calcule le trend
+    let newClientsTrend = "0%";
+    let newClientsIsPositive = true;
+    if (newClientsYesterday > 0) {
+      const diff = newClientsToday - newClientsYesterday;
+      const percent = Math.round((diff / newClientsYesterday) * 100);
+      newClientsTrend = (percent > 0 ? "+" : "") + percent + "%";
+      newClientsIsPositive = percent >= 0;
+    }
+
+
+    //réponse
     res.json({
       stats: {
         openTickets,
-        avgResponseTime,
+        openTicketsTrend,
+        openTicketsIsPositive,
         resolutionRate,
-        newClients: isNaN(newClients) ? 0 : newClients
+        resolutionRateTrend,
+        resolutionRateIsPositive,
+        avgResponseTime,
+        avgResponseTimeTrend,
+        avgResponseTimeIsPositive,
+        newClients: isNaN(newClients) ? 0 : newClients,
+        newClientsTrend,
+        newClientsIsPositive,
       },
       activities: [
         {
