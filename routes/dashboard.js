@@ -8,6 +8,16 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     const userId = req.user.userId;
 
+    // Définition des bornes de date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
     // Période précédente (1 jour)
     const now = new Date();
     const lastDay = new Date();
@@ -54,10 +64,6 @@ router.get("/", verifyToken, async (req, res) => {
       avgResponseTime = `${hours}h ${minutes}m`;
     }
     // Tickets resolu aujourd'hui
-    now.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(now);
-    tomorrow.setDate(today.getDate() + 1);
-
     const todayResolved = tickets.filter(
         t => t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow
     );
@@ -66,8 +72,6 @@ router.get("/", verifyToken, async (req, res) => {
     : 0;
 
     // Tickets résolus hier
-    lastDay.setDate(now.getDate() - 1);
-    
     const yesterdayResolved = tickets.filter(
         t => t.resolvedAt && t.resolvedAt >= yesterday && t.resolvedAt < today
     );
@@ -122,18 +126,12 @@ router.get("/", verifyToken, async (req, res) => {
     }
 
     // Calcule le nombre de nouveaux clients aujourd’hui
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
     const newClientsToday = await User.countDocuments({
       referredBy: userId,
       createdAt: { $gte: today, $lt: tomorrow }
     });
 
     //Calcule le nombre de nouveaux clients hier
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    
     const newClientsYesterday = await User.countDocuments({
       referredBy: userId,
       createdAt: { $gte: yesterday, $lt: today }
