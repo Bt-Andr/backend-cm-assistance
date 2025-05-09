@@ -5,7 +5,7 @@ const User = require("../models/user");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const user = await user.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
