@@ -1,50 +1,66 @@
 const express = require("express");
 const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
-const User = require("../models/user");
 const Ticket = require("../models/ticket");
+const User = require("../models/user");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
+    const userId = req.user.userId;
 
+    // Récupération des tickets de l'utilisateur
+    const tickets = await Ticket.find({ user: userId }); // <-- adapte ici si besoin
+
+    const openTickets = tickets.filter(t => t.status === "open").length;
+    const closedTickets = tickets.filter(t => t.status === "closed").length;
+    const pendingTickets = tickets.filter(t => t.status === "pending").length;
+    const allResolved = tickets.filter(t => t.resolvedAt);
+
+    // Temps moyen de réponse estimé (temps entre création et résolution)
+    let avgResponseTime = "N/A";
+    if (allResolved.length > 0) {
+      const totalResponseTimeMs = allResolved.reduce((acc, ticket) => {
+        const created = new Date(ticket.createdAt);
+        const resolved = new Date(ticket.resolvedAt);
+        return acc + (resolved - created);
+      }, 0);
+
+      const avgMs = totalResponseTimeMs / allResolved.length;
+      const hours = Math.floor(avgMs / (1000 * 60 * 60));
+      const minutes = Math.floor((avgMs % (1000 * 60 * 60)) / (1000 * 60));
+      avgResponseTime = `${hours}h ${minutes}m`;
+    }
+
+    // Taux de résolution
+    const resolutionRate = tickets.length > 0 ? `${Math.round((closedTickets / tickets.length) * 100)}%` : "0%";
+
+    // Clients ajoutés par l'utilisateur (si applicable)
+    const newClients = await User.countDocuments({ referredBy: userId }); // <-- adapte ici si besoin
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
-    //tickets créés par cet utilisateur
-    const openTickets = await Ticket?.countDocuments({ createdBy: user.id, status: "open" }) ?? 0;
-    const closedTickets = await Ticket?.countDocuments({ createdBy: user.id, status: "closed" }) ?? 0;
-
-     // Taux de résolution simple
-     const resolutionRate = closedTickets + openTickets > 0
-     ? `${Math.round((closedTickets / (closedTickets + openTickets)) * 100)}%`
-     : "0%";
-
-     // Temps de réponse fictif (à remplacer plus tard par la vraie mesure)
-    const avgResponseTime = "1.5h";
-
-    // Nouveaux clients ajoutés récemment (si applicable)
-    const newClients = await User?.countDocuments({ referredBy: user.id }) ?? 0;
 
     res.json({
       stats: {
         openTickets,
         avgResponseTime,
         resolutionRate,
-        newClients,
+        newClients: isNaN(newClients) ? 0 : newClients
       },
       activities: [
         {
           title: "Connexion réussie",
           description: "Bienvenue sur CM Assistance",
           time: "il y a quelques instants",
-          icon: "CheckCircle"
+          type: "other"
         },
         {
-          title: "New Ticket Created",
-          description: "Sarah Johnson created a new ticket",
-          time: "10 minutes ago",
-          type: "open",
+          title: "Statistiques mises à jour",
+          description: `Vous avez ${openTickets} tickets ouverts` || "",
+          time: "Aujourd'hui",
+          type: "open"
         }
       ],
       user: {
@@ -54,8 +70,8 @@ router.get("/", verifyToken, async (req, res) => {
       }
     });
   } catch (err) {
+    console.error("Erreur dashboard:", err);
     res.status(500).json({ error: "Erreur lors de la récupération du tableau de bord" });
-    console.error(err);
   }
 });
 
