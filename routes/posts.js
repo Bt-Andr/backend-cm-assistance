@@ -1,43 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../middleware/auth");
-
-// Exemple de données mockées (à remplacer par une vraie base de données)
-const allPosts = [
-  {
-    id: 1,
-    title: "Nouveau lancement produit",
-    content: "Découvrez notre nouveau produit révolutionnaire !",
-    date: "2024-05-01",
-    image: "https://via.placeholder.com/150",
-    platforms: ["Facebook", "Twitter"],
-    reactions: { likes: 120, comments: 34, shares: 12 }
-  },
-  {
-    id: 2,
-    title: "Astuce du jour",
-    content: "Voici une astuce pour améliorer votre productivité.",
-    date: "2024-05-02",
-    image: "https://via.placeholder.com/150",
-    platforms: ["Instagram"],
-    reactions: { likes: 80, comments: 10, shares: 5 }
-  },
-  // ...ajoute d'autres posts ici...
-];
+const Post = require("../models/Post");
 
 // GET /api/posts?page=1&limit=5
-router.get("/", verifyToken, (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 5;
-  const start = (page - 1) * limit;
-  const end = start + limit;
+router.get("/", verifyToken, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
 
-  const paginatedPosts = allPosts.slice(start, end);
+    const [posts, total] = await Promise.all([
+      Post.find().skip(skip).limit(limit).lean(),
+      Post.countDocuments()
+    ]);
 
-  res.json({
-    posts: paginatedPosts,
-    total: allPosts.length
-  });
+    res.json({ posts, total });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors de la récupération des posts" });
+  }
 });
 
 module.exports = router;
