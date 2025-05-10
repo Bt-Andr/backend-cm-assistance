@@ -147,6 +147,20 @@ router.get("/", verifyToken, async (req, res) => {
       newClientsIsPositive = percent >= 0;
     }
 
+    // Exemple de notifications dynamiques (à adapter selon ta logique)
+    const notifications = [
+      {
+        title: "Nouveau ticket reçu",
+        time: "il y a 5 minutes",
+        type: "open"
+      },
+      {
+        title: "Ticket résolu",
+        time: "il y a 1 heure",
+        type: "closed"
+      }
+      // ...ajoute d'autres notifications dynamiques ici...
+    ];
 
     //réponse
     res.json({
@@ -178,6 +192,7 @@ router.get("/", verifyToken, async (req, res) => {
           type: "open"
         }
       ],
+      notifications, // <-- Ajoute cette ligne
       user: {
         id: user._id,
         email: user.email,
