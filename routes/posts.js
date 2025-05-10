@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { verifyToken } = require("../middleware/verifyToken");
-const Post = require("../models/post");
+const verifyToken = require("../middleware/verifyToken");
+const Post = require("../models/posts");
 
 // GET /api/posts?page=1&limit=5
 router.get("/", verifyToken, async (req, res) => {
