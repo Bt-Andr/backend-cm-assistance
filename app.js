@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const ticketRoutes = require('./routes/ticket');
-const publicationRoutes = require('./routes/CreatePost');
 const subscribeRoutes = require('./routes/subscribe');
 const dashboardRoutes = require('./routes/dashboard');
 const postsRoutes = require('./routes/posts');
@@ -18,7 +17,6 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
-app.use('/api/publications', publicationRoutes);
 app.use('/api/subscribe', subscribeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use('/api/posts', postsRoutes);
