@@ -11,7 +11,7 @@ const PostSchema = new mongoose.Schema({
     comments: { type: Number, default: 0 },
     shares: { type: Number, default: 0 }
   },
-  status: { type: String, default: "draft" }, // Ajout du champ status
+  status: { type: String, enum: ["draft", "published", "failed", "pending"], default: "draft" }, // Ajout du champ status
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } // Ajout du champ user
 });
 
