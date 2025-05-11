@@ -6,7 +6,7 @@ const router = express.Router();
 // Création d'un post
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { title, content, platforms, date, status } = req.body;
+    const { title, content, platforms, date, status, image } = req.body;
     if (!title || !content) {
       return res.status(400).json({ error: "Le titre et le contenu sont obligatoires." });
     }
@@ -22,6 +22,7 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(201).json(publication);
   } catch (err) {
     res.status(500).json({ error: "Erreur lors de la création du post." });
+    console.log(err);
   }
 });
 
