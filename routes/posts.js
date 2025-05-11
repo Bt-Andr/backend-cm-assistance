@@ -1,23 +1,46 @@
-const express = require("express");
+const express = require('express');
+const Publication = require('../models/mPost');
+const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();
-const verifyToken = require("../middleware/verifyToken");
-const Post = require("../models/posts");
 
-// GET /api/posts?page=1&limit=5
-router.get("/", verifyToken, async (req, res) => {
+// Création d'un post
+router.post('/', verifyToken, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-    const skip = (page - 1) * limit;
-
-    const [posts, total] = await Promise.all([
-      Post.find().skip(skip).limit(limit).lean(),
-      Post.countDocuments()
-    ]);
-
-    res.json({ posts, total });
+    const { title, content, platforms, date, status } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ error: "Le titre et le contenu sont obligatoires." });
+    }
+    const publication = await Publication.create({
+      title,
+      content,
+      platforms,
+      date,
+      status,
+      image,
+      user: req.userId
+    });
+    res.status(201).json(publication);
   } catch (err) {
-    res.status(500).json({ error: "Erreur lors de la récupération des posts" });
+    res.status(500).json({ error: "Erreur lors de la création du post." });
+  }
+});
+
+// Récupération des posts de l'utilisateur connecté
+router.get('/', verifyToken, async (req, res) => {
+  try {
+    const posts = await Publication.find({ user: req.userId });
+    const total = await Publication.countDocuments({ user: req.userId });
+    // Transformation : _id -> id
+    const postsWithId = posts.map(post => {
+      const obj = post.toObject();
+      obj.id = obj._id;
+      delete obj._id;
+      delete obj.__v;
+      return obj;
+    });
+    res.json({ posts: postsWithId, total });
+  } catch (err) {
+    res.status(500).json({ error: "Erreur lors de la récupération des posts." });
   }
 });
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const Ticket = require('../models/ticket');
+const Ticket = require('../models/mTicket');
 const auth = require('../middleware/authMiddleware');
 const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();

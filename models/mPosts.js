@@ -10,7 +10,9 @@ const PostSchema = new mongoose.Schema({
     likes: { type: Number, default: 0 },
     comments: { type: Number, default: 0 },
     shares: { type: Number, default: 0 }
-  }
+  },
+  status: { type: String, default: "draft" }, // Ajout du champ status
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" } // Ajout du champ user
 });
 
 module.exports = mongoose.model("Post", PostSchema);

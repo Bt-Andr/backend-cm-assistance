@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
 const publicationSchema = new mongoose.Schema({
+  title: { type: String, required: true },
   content: String,
-  platform: String,
+  platforms: [String], // tableau de plateformes
   status: { type: String, default: 'scheduled' },
-  publishDate: Date,
+  date: Date, // même nom que le frontend
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 });
 
