@@ -1,5 +1,5 @@
 const express = require('express');
-const Publication = require('../models/mPost');
+const Publication = require('../models/mPosts');
 const verifyToken = require('../middleware/verifyToken');
 const router = express.Router();
 
