@@ -8,7 +8,7 @@ const ticketSchema = new mongoose.Schema({
     enum: ['open', 'pending', 'closed'],
     default: 'open',
   },
-  priority: {//Pour filtrer/statistiquement classer par priorité
+  priority: {
     type: String,
     enum: ['low', 'medium', 'high'],
     default: 'medium',
@@ -18,19 +18,33 @@ const ticketSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  createdAt: {//Pour trier les tickets récents ou calculer temps de réponse
-    type: Date,
-    default: Date.now,
-  },
-  resolvedAt: {//Pour calculer la durée de résolution
-    type: Date,
-    default: null,
-  },
-  assignedTo: {//Pour un jour attribuer un ticket à un agent/support spécifique
+  assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null,
-  }
-});
+  },
+  category: { type: String }, // Catégorie/type de ticket
+  tags: [String], // Tags pour filtrage/organisation
+  attachments: [String], // URLs ou chemins des pièces jointes
+  history: [{
+    action: String, // ex: "status_changed", "comment_added"
+    message: String,
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    date: { type: Date, default: Date.now }
+  }],
+  slaDueAt: { type: Date }, // Date limite SLA
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  resolvedAt: {
+    type: Date,
+    default: null,
+  },
+  // Champs pour l'évaluation du ticket
+  evaluated: { type: Boolean, default: false },
+  rating: { type: Number, min: 1, max: 5 },
+  evaluationComment: { type: String }
+}, { timestamps: true }); // Ajoute createdAt et updatedAt automatiquement
 
 module.exports = mongoose.model('Ticket', ticketSchema);

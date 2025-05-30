@@ -33,9 +33,9 @@ router.get("/", verifyToken, async (req, res) => {
 
     // Tickets ouverts le jour precedent
     const prevTickets = await Ticket.find({
-    user: userId,
-    status: "open",
-    createdAt: { $gte: lastDay, $lt: now }
+      user: userId,
+      status: "open",
+      createdAt: { $gte: lastDay, $lt: now }
     });
     const prevOpenTickets = prevTickets.length;
 
@@ -43,10 +43,10 @@ router.get("/", verifyToken, async (req, res) => {
     let openTicketsTrend = "0%";
     let openTicketsIsPositive = true;
     if (prevOpenTickets > 0) {
-    const diff = openTickets - prevOpenTickets;
-    const percent = Math.round((diff / prevOpenTickets) * 100);
-    openTicketsTrend = (percent > 0 ? "+" : "") + percent + "%";
-    openTicketsIsPositive = percent >= 0;
+      const diff = openTickets - prevOpenTickets;
+      const percent = Math.round((diff / prevOpenTickets) * 100);
+      openTicketsTrend = (percent > 0 ? "+" : "") + percent + "%";
+      openTicketsIsPositive = percent >= 0;
     }
 
     // Temps moyen de réponse estimé (temps entre création et résolution)
@@ -65,28 +65,28 @@ router.get("/", verifyToken, async (req, res) => {
     }
     // Tickets resolu aujourd'hui
     const todayResolved = tickets.filter(
-        t => t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow
+      t => t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow
     );
     const avgTodayMs = todayResolved.length > 0
-    ? todayResolved.reduce((acc, t) => acc + (new Date(t.resolvedAt) - new Date(t.createdAt)), 0) / todayResolved.length
-    : 0;
+      ? todayResolved.reduce((acc, t) => acc + (new Date(t.resolvedAt) - new Date(t.createdAt)), 0) / todayResolved.length
+      : 0;
 
     // Tickets résolus hier
     const yesterdayResolved = tickets.filter(
-        t => t.resolvedAt && t.resolvedAt >= yesterday && t.resolvedAt < today
+      t => t.resolvedAt && t.resolvedAt >= yesterday && t.resolvedAt < today
     );
     const avgYesterdayMs = yesterdayResolved.length > 0
-    ? yesterdayResolved.reduce((acc, t) => acc + (new Date(t.resolvedAt) - new Date(t.createdAt)), 0) / yesterdayResolved.length
-    : 0;
+      ? yesterdayResolved.reduce((acc, t) => acc + (new Date(t.resolvedAt) - new Date(t.createdAt)), 0) / yesterdayResolved.length
+      : 0;
 
     // Calcul du trend avgResponseTimeTrend
     let avgResponseTimeTrend = "0%";
     let avgResponseTimeIsPositive = true;
     if (avgYesterdayMs > 0) {
-        const diff = avgTodayMs - avgYesterdayMs;
-        const percent = Math.round((diff / avgYesterdayMs) * 100);
-        avgResponseTimeTrend = (percent > 0 ? "+" : "") + percent + "%";
-        avgResponseTimeIsPositive = percent <= 0; // une baisse est positive (temps de réponse plus court)
+      const diff = avgTodayMs - avgYesterdayMs;
+      const percent = Math.round((diff / avgYesterdayMs) * 100);
+      avgResponseTimeTrend = (percent > 0 ? "+" : "") + percent + "%";
+      avgResponseTimeIsPositive = percent <= 0; // une baisse est positive (temps de réponse plus court)
     }
 
     // Taux de résolution
@@ -94,15 +94,16 @@ router.get("/", verifyToken, async (req, res) => {
 
     // Tickets résolus aujourd'hui
     const todayClosed = tickets.filter(
-      t => t.status === "closed" && t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow ).length;
-    const todayTotal = tickets.filter( t => t.createdAt >= today && t.createdAt < tomorrow ).length;
+      t => t.status === "closed" && t.resolvedAt && t.resolvedAt >= today && t.resolvedAt < tomorrow
+    ).length;
+    const todayTotal = tickets.filter(t => t.createdAt >= today && t.createdAt < tomorrow).length;
     const resolutionRateToday = todayTotal > 0 ? Math.round((todayClosed / todayTotal) * 100) : 0;
 
-    // Tickets résolus aujourd'hui
+    // Tickets résolus hier
     const yesterdayClosed = tickets.filter(
       t => t.status === "closed" && t.resolvedAt && t.resolvedAt >= yesterday && t.resolvedAt < today
     ).length;
-    const yesterdayTotal = tickets.filter( t => t.createdAt >= yesterday && t.createdAt < today ).length;
+    const yesterdayTotal = tickets.filter(t => t.createdAt >= yesterday && t.createdAt < today).length;
     const resolutionRateYesterday = yesterdayTotal > 0 ? Math.round((yesterdayClosed / yesterdayTotal) * 100) : 0;
 
     // Calcule le trend
@@ -114,8 +115,6 @@ router.get("/", verifyToken, async (req, res) => {
       resolutionRateTrend = (percent > 0 ? "+" : "") + percent + "%";
       resolutionRateIsPositive = percent >= 0;
     }
-
-    
 
     // Clients ajoutés par l'utilisateur (si applicable)
     const newClients = await User.countDocuments({ referredBy: userId }); // <-- adapte ici si besoin
@@ -147,6 +146,13 @@ router.get("/", verifyToken, async (req, res) => {
       newClientsIsPositive = percent >= 0;
     }
 
+    // ----------- AJOUT : Calcul du nombre d'utilisateurs actifs -----------
+    // Exemple : utilisateurs connectés aujourd'hui (lastActiveAt >= today)
+    const activeUsers = await User.countDocuments({
+      lastActiveAt: { $gte: today, $lt: tomorrow }
+    });
+    // ----------------------------------------------------------------------
+
     // Exemple de notifications dynamiques (à adapter selon ta logique)
     const notifications = [
       {
@@ -162,7 +168,6 @@ router.get("/", verifyToken, async (req, res) => {
       // ...ajoute d'autres notifications dynamiques ici...
     ];
 
-    //réponse
     res.json({
       stats: {
         openTickets,
@@ -177,6 +182,7 @@ router.get("/", verifyToken, async (req, res) => {
         newClients: isNaN(newClients) ? 0 : newClients,
         newClientsTrend,
         newClientsIsPositive,
+        activeUsers // <-- AJOUT ICI
       },
       activities: [
         {
@@ -196,7 +202,15 @@ router.get("/", verifyToken, async (req, res) => {
       user: {
         id: user._id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        preferences: user.preferences,
+        emailVerified: user.emailVerified,
+        isActive: user.isActive,
+        lastActiveAt: user.lastActiveAt,
+        permissions: user.permissions,
+        referredBy: user.referredBy
       }
     });
   } catch (err) {

@@ -9,11 +9,27 @@ const userSchema = new mongoose.Schema({
   // Tracker qui a référé ce compte (utile pour les stats)
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
-  // Suivre l'inscription
-  createdAt: { type: Date, default: Date.now },
+  // Sécurité et gestion de compte
+  emailVerified: { type: Boolean, default: false },
+  verificationToken: String,
+  verificationTokenExpires: Date,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
 
-  // Exemple futur pour suivre l’activité (connexion, actions, etc.)
+  // Avatar et préférences
+  avatarUrl: String,
+  preferences: {
+    language: { type: String, default: 'fr' },
+    notifications: { type: Boolean, default: true }
+  },
+
+  // Permissions et gestion avancée
+  permissions: [String],
+  isActive: { type: Boolean, default: true },
+  deletedAt: Date,
+
+  // Suivre l'inscription et l’activité
   lastActiveAt: { type: Date }
-});
+}, { timestamps: true }); // Ajoute createdAt et updatedAt automatiquement
 
 module.exports = mongoose.model('User', userSchema);

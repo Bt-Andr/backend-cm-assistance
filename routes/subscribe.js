@@ -5,11 +5,9 @@ const sendConfirmationEmail = require('../utils/mailer');
 
 router.post('/', async (req, res) => {
   try {
-    const { name, email, companyType } = req.body;
-    const newSubscriber = await Subscriber.create({ name, email, companyType });
-    res.status(201).json({ message: 'Inscription réussie', data: newSubscriber });
+    const { name, email, companyType, status, source, notes, referral } = req.body;
+    const newSubscriber = await Subscriber.create({ name, email, companyType, status, source, notes, referral });
     await sendConfirmationEmail(email, name);
-
     res.status(201).json({ message: 'Inscription réussie', data: newSubscriber });
   } catch (err) {
     if (err.code === 11000) {

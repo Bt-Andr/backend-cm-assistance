@@ -7,6 +7,8 @@ const ticketRoutes = require('./routes/ticket');
 const subscribeRoutes = require('./routes/subscribe');
 const dashboardRoutes = require('./routes/dashboard');
 const postsRoutes = require('./routes/posts');
+const clientRoutes = require('./routes/clients');
+const userRoutes = require('./routes/user');
 
 dotenv.config();
 const app = express();
@@ -20,6 +22,8 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/subscribe', subscribeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use('/api/posts', postsRoutes);
+app.use("/api/clients", clientRoutes);
+app.use('/api/profile', userRoutes);
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI)
