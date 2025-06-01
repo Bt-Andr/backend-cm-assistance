@@ -35,7 +35,7 @@ router.post('/', verifyToken, async (req, res) => {
 // Liste des tickets
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const tickets = await Ticket.find({ user: req.userId });
+    const tickets = await Ticket.find({ deletedBy: { $ne: req.userId } });
     res.json({ data: tickets });
   } catch (err) {
     res.status(500).json({ message: err.message });

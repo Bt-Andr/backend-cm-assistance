@@ -44,7 +44,8 @@ const ticketSchema = new mongoose.Schema({
   // Champs pour l'évaluation du ticket
   evaluated: { type: Boolean, default: false },
   rating: { type: Number, min: 1, max: 5 },
-  evaluationComment: { type: String }
+  evaluationComment: { type: String },
+  deletedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 }, { timestamps: true }); // Ajoute createdAt et updatedAt automatiquement
 
 module.exports = mongoose.model('Ticket', ticketSchema);
