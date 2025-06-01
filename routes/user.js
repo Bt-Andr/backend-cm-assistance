@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Mise à jour du profil utilisateur (JSON)
-router.put('/profile', verifyToken, async (req, res) => {
+router.put('/', verifyToken, async (req, res) => {
   try {
     const { firstName, lastName, email, company, position, avatarUrl, avatarFile, phone } = req.body;
     const userId = req.user.userId;
