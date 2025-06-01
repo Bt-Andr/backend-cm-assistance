@@ -3,15 +3,28 @@ const router = express.Router();
 const verifyToken = require('../middleware/verifyToken');
 const User = require('../models/mUser');
 
-// Mise à jour du profil utilisateur
-router.put('/profile', verifyToken, async (req, res) => {
+// Mise à jour du profil utilisateur (inclut l'avatar)
+router.put('/', verifyToken, async (req, res) => {
   try {
-    const { firstName, lastName, email, company, position, avatar, phone } = req.body;
+    const { firstName, lastName, email, company, position, avatarUrl, avatarFile, phone } = req.body;
     const userId = req.user.userId;
+
+    const updateFields = {
+      firstName,
+      lastName,
+      email,
+      company,
+      position,
+      phone,
+    };
+
+    // Si un avatarUrl ou un avatarFile est fourni, on l'ajoute à la mise à jour
+    if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
+    if (avatarFile !== undefined) updateFields.avatarFile = avatarFile;
 
     const updated = await User.findByIdAndUpdate(
       userId,
-      { firstName, lastName, email, company, position, avatar, phone },
+      updateFields,
       { new: true }
     );
     if (!updated) {

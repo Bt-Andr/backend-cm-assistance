@@ -17,7 +17,11 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: Date,
 
   // Avatar et préférences
-  avatarUrl: String,
+  avatarUrl: String, // URL de l'avatar (optionnel)
+  avatarFile: {      // Pour stocker le nom du fichier uploadé (optionnel)
+    type: String,
+    default: null
+  },
   preferences: {
     language: { type: String, default: 'fr' },
     notifications: { type: Boolean, default: true }
