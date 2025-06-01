@@ -44,7 +44,7 @@ router.put('/', verifyToken, async (req, res) => {
 });
 
 // Upload d'avatar (multipart/form-data)
-router.post('/profile/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
+router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "Aucun fichier envoyé" });
   const url = `/uploads/avatars/${req.file.filename}`;
   res.json({ url, filename: req.file.filename });
