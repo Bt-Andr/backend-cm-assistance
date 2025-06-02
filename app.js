@@ -9,6 +9,8 @@ const dashboardRoutes = require('./routes/dashboard');
 const postsRoutes = require('./routes/posts');
 const clientRoutes = require('./routes/clients');
 const userRoutes = require('./routes/user');
+const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
 const app = express();
@@ -32,3 +34,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
+
+const uploadDir = path.join(__dirname, 'uploads/avatars');
+fs.mkdirSync(uploadDir, { recursive: true });
