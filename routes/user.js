@@ -14,18 +14,12 @@ const upload = multer({ storage });
 // Mise à jour du profil utilisateur (JSON)
 router.put('/', verifyToken, async (req, res) => {
   try {
-    const { firstName, lastName, email, company, position, avatarUrl, avatarFile, phone } = req.body;
+    const { name, email, avatarUrl, avatarFile } = req.body;
     const userId = req.user.userId;
 
-    const updateFields = {
-      firstName,
-      lastName,
-      email,
-      company,
-      position,
-      phone,
-    };
-
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
+    if (email !== undefined) updateFields.email = email;
     if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
     if (avatarFile !== undefined) updateFields.avatarFile = avatarFile;
 
