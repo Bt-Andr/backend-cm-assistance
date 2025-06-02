@@ -3,6 +3,9 @@ const router = express.Router();
 const multer = require('multer');
 const verifyToken = require('../middleware/verifyToken');
 const User = require('../models/mUser');
+const PendingUserUpdate = require('../models/PendingUserUpdate');
+const crypto = require('crypto');
+const sendMail = require('../utils/sendMail'); // À adapter selon ton projet
 
 // Configurer multer pour l'upload d'avatar
 const storage = multer.diskStorage({
@@ -42,6 +45,71 @@ router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) =>
   if (!req.file) return res.status(400).json({ message: "Aucun fichier envoyé" });
   const url = `/uploads/avatars/${req.file.filename}`;
   res.json({ url, filename: req.file.filename });
+});
+
+router.put('/profile', verifyToken, async (req, res) => {
+  try {
+    const { name, email, avatarUrl, avatarFile } = req.body;
+    const userId = req.user.userId;
+
+    // Prépare les champs à modifier
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
+    if (email !== undefined) updateFields.email = email;
+    if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
+    if (avatarFile !== undefined) updateFields.avatarFile = avatarFile;
+
+    // Génère un token et une date d'expiration (24 heures)
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 1440 * 60 * 1000);
+
+    // Stocke la demande
+    await PendingUserUpdate.create({
+      userId,
+      updateFields,
+      token,
+      expiresAt
+    });
+
+    // Envoie le mail de confirmation
+    const confirmUrl = `https://ton-domaine.com/api/profile/confirm-update?token=${token}`;
+    await sendMail({
+      to: req.user.email,
+      subject: "Confirmation de modification de profil",
+      html: `
+        <p>Vous avez demandé à modifier les informations suivantes :</p>
+        <pre>${JSON.stringify(updateFields, null, 2)}</pre>
+        <p>Date et heure de la demande : ${new Date().toLocaleString()}</p>
+        <p>Pour confirmer, cliquez sur ce lien : <a href="${confirmUrl}">${confirmUrl}</a></p>
+        <p>Ce lien expirera dans 30 minutes.</p>
+      `
+    });
+
+    res.status(200).json({ message: "Mail de confirmation envoyé. Veuillez vérifier votre boîte mail." });
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors de la demande de modification." });
+  }
+});
+
+router.get('/profile/confirm-update', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const pending = await PendingUserUpdate.findOne({ token });
+
+    if (!pending || pending.expiresAt < new Date()) {
+      return res.status(400).send("Lien invalide ou expiré.");
+    }
+
+    // Applique la modification
+    await User.findByIdAndUpdate(pending.userId, pending.updateFields);
+
+    // Supprime la demande en attente
+    await PendingUserUpdate.deleteOne({ _id: pending._id });
+
+    res.send("Modification confirmée et appliquée !");
+  } catch (err) {
+    res.status(500).send("Erreur lors de la confirmation.");
+  }
 });
 
 module.exports = router;
