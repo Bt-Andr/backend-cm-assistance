@@ -73,7 +73,7 @@ router.put('/profile', verifyToken, async (req, res) => {
     });
 
     // Envoie le mail de confirmation
-    const confirmUrl = `http://localhost:8080//profile/confirm-update?token=${token}`;
+    const confirmUrl = `https://localhost:8080//profile/confirm-update?token=${token}`;
     try {
       await sendMail({
         to: req.user.email,
