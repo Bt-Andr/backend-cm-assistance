@@ -171,7 +171,10 @@ router.get("/", verifyToken, async (req, res) => {
     // Correction : Génère une URL absolue pour l'avatar si présent
     let avatarUrl = user.avatarUrl;
     if (avatarUrl && !avatarUrl.startsWith("http")) {
-      // Ajoute le domaine backend devant le chemin relatif
+      // Ajoute un slash si besoin
+      if (!avatarUrl.startsWith("/")) {
+        avatarUrl = "/" + avatarUrl;
+      }
       avatarUrl = `https://backend-cm-assistance.onrender.com${avatarUrl}`;
     }
 
