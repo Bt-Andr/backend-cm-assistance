@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Mise à jour du profil utilisateur (JSON)
-router.put('/', verifyToken, async (req, res) => {
+/*router.put('/', verifyToken, async (req, res) => {
   try {
     const { name, email, avatarUrl, avatarFile } = req.body;
     const userId = req.user.userId;
@@ -39,7 +39,7 @@ router.put('/', verifyToken, async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la mise à jour du profil" });
   }
-});
+});*/
 
 // Upload d'avatar (multipart/form-data)
 router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
@@ -48,7 +48,7 @@ router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) =>
   res.json({ url, filename: req.file.filename });
 });
 
-router.put('/profile', verifyToken, async (req, res) => {
+router.put('/', verifyToken, async (req, res) => {
   try {
     const { name, email, avatarUrl, avatarFile } = req.body;
     const userId = req.user.userId;
