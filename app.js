@@ -18,8 +18,10 @@ const uploadsAvatars = express.static(path.join(__dirname, 'uploads/avatars'))
 dotenv.config();
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+app.use(cors()); // <-- doit être AVANT les routes et les fichiers statiques
+
+// Permet le CORS aussi pour les fichiers statiques
+app.use('/uploads/avatars', cors(), express.static(path.join(__dirname, 'uploads/avatars')));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -29,7 +31,6 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use('/api/posts', postsRoutes);
 app.use("/api/clients", clientRoutes);
 app.use('/api/profile', userRoutes);
-app.use('/uploads/avatars', uploadsAvatars);
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI)
