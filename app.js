@@ -13,7 +13,6 @@ const dashboardRoutes = require('./routes/dashboard');
 const postsRoutes = require('./routes/posts');
 const clientRoutes = require('./routes/clients');
 const userRoutes = require('./routes/user');
-const uploadsAvatars = express.static(path.join(__dirname, 'uploads/avatars'))
 
 dotenv.config();
 const app = express();

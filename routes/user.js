@@ -7,13 +7,14 @@ const PendingUserUpdate = require('../models/PendingUserUpdate');
 const ModificationHistory = require('../models/ModificationHistory'); // À créer
 const crypto = require('crypto');
 const sendMail = require('../utils/sendMail');
+const upload = require('../utils/cloudinaryStorage');
 
 // Configurer multer pour l'upload d'avatar
-const storage = multer.diskStorage({
+/*const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/avatars/'),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
-const upload = multer({ storage });
+const upload = multer({ storage });*/
 
 // Mise à jour du profil utilisateur (JSON)
 /*router.put('/', verifyToken, async (req, res) => {
@@ -43,9 +44,11 @@ const upload = multer({ storage });
 
 // Upload d'avatar (multipart/form-data)
 router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ message: "Aucun fichier envoyé" });
-  const url = `/uploads/avatars/${req.file.filename}`;
-  res.json({ url, filename: req.file.filename });
+  if (!req.file || !req.file.path) {
+    return res.status(400).json({ message: "Aucun fichier envoyé" });
+  }
+  // L'URL Cloudinary est dans req.file.path
+  res.json({ url: req.file.path, filename: req.file.filename });
 });
 
 router.put('/', verifyToken, async (req, res) => {
