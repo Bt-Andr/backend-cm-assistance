@@ -9,6 +9,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const postsRoutes = require('./routes/posts');
 const clientRoutes = require('./routes/clients');
 const userRoutes = require('./routes/user');
+const uploadsAvatars = express.static(path.join(__dirname, 'uploads/avatars'))
 const fs = require('fs');
 const path = require('path');
 
@@ -26,6 +27,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use('/api/posts', postsRoutes);
 app.use("/api/clients", clientRoutes);
 app.use('/api/profile', userRoutes);
+app.use('/uploads/avatars', uploadsAvatars);
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI)

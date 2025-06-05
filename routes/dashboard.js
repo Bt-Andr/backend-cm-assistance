@@ -168,6 +168,13 @@ router.get("/", verifyToken, async (req, res) => {
       // ...ajoute d'autres notifications dynamiques ici...
     ];
 
+    // Correction : Génère une URL absolue pour l'avatar si présent
+    let avatarUrl = user.avatarUrl;
+    if (avatarUrl && !avatarUrl.startsWith("http")) {
+      // Ajoute le domaine backend devant le chemin relatif
+      avatarUrl = `https://backend-cm-assistance.onrender.com${avatarUrl}`;
+    }
+
     res.json({
       stats: {
         openTickets,
@@ -203,7 +210,7 @@ router.get("/", verifyToken, async (req, res) => {
         id: user._id,
         email: user.email,
         name: user.name,
-        avatarUrl: user.avatarUrl,
+        avatarUrl, // <-- Utilise l'URL absolue ici
         role: user.role,
         preferences: user.preferences,
         emailVerified: user.emailVerified,
