@@ -2,6 +2,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+
+// Import des routes
 const authRoutes = require('./routes/auth');
 const ticketRoutes = require('./routes/ticket');
 const subscribeRoutes = require('./routes/subscribe');
@@ -10,8 +14,6 @@ const postsRoutes = require('./routes/posts');
 const clientRoutes = require('./routes/clients');
 const userRoutes = require('./routes/user');
 const uploadsAvatars = express.static(path.join(__dirname, 'uploads/avatars'))
-const fs = require('fs');
-const path = require('path');
 
 dotenv.config();
 const app = express();
