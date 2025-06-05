@@ -73,7 +73,7 @@ router.put('/', verifyToken, async (req, res) => {
     });
 
     // Envoie le mail de confirmation
-    const confirmUrl = `https://localhost:8080//profile/confirm-update?token=${token}`;
+    const confirmUrl = `https://localhost:8080/profile/confirm-update?token=${token}`;
     try {
       await sendMail({
         to: req.user.email,
@@ -100,7 +100,7 @@ router.put('/', verifyToken, async (req, res) => {
 });
 
 // Confirmation de la modification via le lien reçu par mail
-router.get('/profile/confirm-update', async (req, res) => {
+router.get('/confirm-update', async (req, res) => {
   try {
     const { token } = req.query;
     const pending = await PendingUserUpdate.findOne({ token });
