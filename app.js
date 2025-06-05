@@ -17,7 +17,8 @@ const userRoutes = require('./routes/user');
 dotenv.config();
 const app = express();
 
-app.use(cors()); // <-- doit être AVANT les routes et les fichiers statiques
+app.use(cors());
+app.use(express.json()); // <-- Ajoute ceci AVANT tes routes
 
 // Permet le CORS aussi pour les fichiers statiques
 app.use('/uploads/avatars', cors(), express.static(path.join(__dirname, 'uploads/avatars')));
