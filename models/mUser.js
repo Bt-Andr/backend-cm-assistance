@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -35,5 +36,10 @@ const userSchema = new mongoose.Schema({
   // Suivre l'inscription et l’activité
   lastActiveAt: { type: Date }
 }, { timestamps: true }); // Ajoute createdAt et updatedAt automatiquement
+
+// Méthode d'instance pour comparer les mots de passe
+userSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model('User', userSchema);
