@@ -117,7 +117,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // Envoie l'email de réinitialisation
-    const resetUrl = `http://localhost:8080/reset-password?token=${token}`;
+    const resetUrl = `https://cm-assistance-frontend.vercel.app/reset-password?token=${token}`;
     await sendMail({
       to: user.email,
       subject: "Réinitialisation de votre mot de passe",

@@ -35,10 +35,17 @@ router.post('/', verifyToken, async (req, res) => {
 // Liste des tickets
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const tickets = await Ticket.find({ deletedBy: { $ne: req.userId } });
-    res.json({ data: tickets });
+    let tickets;
+    if (req.user.role === "admin") {
+      tickets = await Ticket.find();
+    } else {
+      // Filtre par userId ou email selon ton modèle
+      tickets = await Ticket.find({ email: req.user.email });
+      // ou : tickets = await Ticket.find({ userId: req.user.userId });
+    }
+    res.json(tickets);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Erreur lors de la récupération des tickets" });
   }
 });
 

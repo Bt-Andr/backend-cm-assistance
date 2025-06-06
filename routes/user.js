@@ -76,7 +76,7 @@ router.put('/', verifyToken, async (req, res) => {
     });
 
     // Envoie le mail de confirmation
-    const confirmUrl = `https://localhost:8080/profile/confirm-update?token=${token}`;
+    const confirmUrl = `https://cm-assistance-frontend.vercel.app/profile/confirm-update?token=${token}`;
     try {
       await sendMail({
         to: req.user.email,
@@ -173,7 +173,7 @@ router.post('/password', verifyToken, async (req, res) => {
     });
 
     // Envoie le mail de confirmation
-    const confirmUrl = `https://localhost:8080/profile/confirm-update?token=${token}`;
+    const confirmUrl = `https://cm-assistance-frontend.vercel.app/profile/confirm-update?token=${token}`;
     await sendMail({
       to: user.email,
       subject: "Confirmation de changement de mot de passe",
