@@ -18,10 +18,14 @@ dotenv.config();
 const app = express();
 
 app.use(cors());
-app.use(express.json()); // <-- Ajoute ceci AVANT tes routes
+app.use(express.json()); // Middleware JSON avant les routes
+
+// Création du dossier d'upload d'avatars si besoin
+const uploadDir = path.join(__dirname, 'uploads/avatars');
+fs.mkdirSync(uploadDir, { recursive: true });
 
 // Permet le CORS aussi pour les fichiers statiques
-app.use('/uploads/avatars', cors(), express.static(path.join(__dirname, 'uploads/avatars')));
+app.use('/uploads/avatars', cors(), express.static(uploadDir));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -39,6 +43,3 @@ mongoose.connect(process.env.MONGO_URI)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Serveur lancé sur le port ${PORT}`));
-
-const uploadDir = path.join(__dirname, 'uploads/avatars');
-fs.mkdirSync(uploadDir, { recursive: true });
