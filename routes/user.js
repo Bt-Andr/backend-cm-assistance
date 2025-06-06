@@ -132,4 +132,64 @@ router.get('/confirm-update', async (req, res) => {
   }
 });
 
+// Demande de changement de mot de passe (avec confirmation par mail)
+router.post('/password', verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    // Vérifie le mot de passe actuel
+    const user = await User.findById(userId);
+    if (!user || !(await user.comparePassword(currentPassword))) {
+      return res.status(400).json({ message: "Mot de passe actuel incorrect." });
+    }
+
+    // Validation moderne du nouveau mot de passe
+    if (!newPassword || typeof newPassword !== "string" || newPassword.length < 8) {
+      return res.status(400).json({ message: "Le nouveau mot de passe doit contenir au moins 8 caractères." });
+    }
+    if (newPassword === currentPassword) {
+      return res.status(400).json({ message: "Le nouveau mot de passe doit être différent de l'ancien." });
+    }
+    // Optionnel : vérifie la complexité (au moins une majuscule, une minuscule, un chiffre, un caractère spécial)
+    const complexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!complexityRegex.test(newPassword)) {
+      return res.status(400).json({
+        message:
+          "Le nouveau mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.",
+      });
+    }
+
+    // Génère un token et une date d'expiration (24 heures)
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    // Stocke la demande de changement de mot de passe
+    await PendingUserUpdate.create({
+      userId,
+      updateFields: { password: newPassword },
+      token,
+      expiresAt
+    });
+
+    // Envoie le mail de confirmation
+    const confirmUrl = `https://localhost:8080/profile/confirm-update?token=${token}`;
+    await sendMail({
+      to: user.email,
+      subject: "Confirmation de changement de mot de passe",
+      html: `
+        <p>Vous avez demandé à changer votre mot de passe.</p>
+        <p>Date et heure de la demande : ${new Date().toLocaleString()}</p>
+        <p>Pour confirmer, cliquez sur ce lien : <a href="${confirmUrl}">${confirmUrl}</a></p>
+        <p>Ce lien expirera dans 24 heures.</p>
+      `
+    });
+
+    res.status(200).json({ message: "Mail de confirmation envoyé. Veuillez vérifier votre boîte mail." });
+  } catch (err) {
+    console.error("Erreur lors de la demande de changement de mot de passe :", err);
+    res.status(500).json({ message: "Erreur lors de la demande de changement de mot de passe." });
+  }
+});
+
 module.exports = router;
