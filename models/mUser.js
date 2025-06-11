@@ -19,13 +19,21 @@ const userSchema = new mongoose.Schema({
 
   // Avatar et préférences
   avatarUrl: String, // URL de l'avatar (optionnel)
-  avatarFile: {      // Pour stocker le nom du fichier uploadé (optionnel)
+  avatarFile: {
     type: String,
     default: null
   },
   preferences: {
     language: { type: String, default: 'fr' },
-    notifications: { type: Boolean, default: true }
+    // notifications devient un objet pour stocker chaque préférence individuellement
+    notifications: {
+      newTicket: { type: Boolean, default: true },
+      postReminders: { type: Boolean, default: true },
+      analytics: { type: Boolean, default: false },
+      clientComms: { type: Boolean, default: true },
+      realTime: { type: Boolean, default: true },
+      sound: { type: Boolean, default: false }
+    }
   },
 
   // Permissions et gestion avancée

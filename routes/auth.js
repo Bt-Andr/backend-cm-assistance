@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/mUser');
 const ResetToken = require('../models/ResetToken');
-const sendMail = require('../utils/sendMail'); // À adapter selon ton projet
+const Notification = require('../models/Notification');
+const sendMail = require('../utils/sendMail');
 const router = express.Router();
 
 // REGISTER
@@ -12,11 +13,16 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, avatarUrl, preferences } = req.body;
 
+    // Vérifie si l'utilisateur existe déjà
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "Un compte existe déjà avec cet email." });
+    }
+
     // Validation moderne du mot de passe
     if (!password || typeof password !== "string" || password.length < 8) {
       return res.status(400).json({ message: "Le mot de passe doit contenir au moins 8 caractères." });
     }
-    // Complexité : majuscule, minuscule, chiffre, caractère spécial
     const complexityRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     if (!complexityRegex.test(password)) {
       return res.status(400).json({
@@ -42,6 +48,16 @@ router.post('/register', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
+
+    // Notification in-app : bienvenue
+    await Notification.create({
+      user: user._id,
+      type: "register_success",
+      title: "Bienvenue !",
+      message: "Votre compte a été créé avec succès.",
+      link: "/profile",
+      read: false
+    });
 
     // Ne jamais retourner le mot de passe
     const userObj = user.toObject();
@@ -76,6 +92,16 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "2h" }
     );
+
+    // Notification in-app : connexion réussie (optionnel)
+    await Notification.create({
+      user: user._id,
+      type: "login_success",
+      title: "Connexion réussie",
+      message: "Vous vous êtes connecté avec succès.",
+      link: "/dashboard",
+      read: false
+    });
 
     // Ne jamais retourner le mot de passe
     const userObj = user.toObject();
@@ -117,7 +143,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // Envoie l'email de réinitialisation
-    const resetUrl = `https://cm-assistance-frontend.vercel.app/reset-password?token=${token}`;
+    const resetUrl = `https://localhost:8080/reset-password?token=${token}`;
     await sendMail({
       to: user.email,
       subject: "Réinitialisation de votre mot de passe",
@@ -126,6 +152,16 @@ router.post("/forgot-password", async (req, res) => {
         <p>Cliquez sur ce lien pour choisir un nouveau mot de passe : <a href="${resetUrl}">${resetUrl}</a></p>
         <p>Ce lien expirera dans 1 heure.</p>
       `
+    });
+
+    // Notification in-app
+    await Notification.create({
+      user: user._id,
+      type: "password_reset_requested",
+      title: "Réinitialisation demandée",
+      message: "Une demande de réinitialisation de mot de passe a été initiée. Vérifiez votre boîte mail.",
+      link: "/auth",
+      read: false
     });
 
     res.status(200).json({ message: "Un email de réinitialisation a été envoyé." });
@@ -163,6 +199,16 @@ router.post("/reset-password", async (req, res) => {
 
     // 4. Invalide le token (suppression)
     await ResetToken.deleteOne({ _id: resetRecord._id });
+
+    // Notification in-app
+    await Notification.create({
+      user: resetRecord.userId,
+      type: "password_reset_success",
+      title: "Mot de passe réinitialisé",
+      message: "Votre mot de passe a été réinitialisé avec succès.",
+      link: "/auth",
+      read: false
+    });
 
     res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
   } catch (error) {

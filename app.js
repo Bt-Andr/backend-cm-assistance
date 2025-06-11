@@ -13,6 +13,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const postsRoutes = require('./routes/posts');
 const clientRoutes = require('./routes/clients');
 const userRoutes = require('./routes/user');
+const notificationRoutes = require('./routes/notification'); // <-- Ajout de la route notifications
 
 dotenv.config();
 const app = express();
@@ -35,6 +36,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use('/api/posts', postsRoutes);
 app.use("/api/clients", clientRoutes);
 app.use('/api/profile', userRoutes);
+app.use('/api/notifications', notificationRoutes); // <-- Ajout de la route notifications
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI)

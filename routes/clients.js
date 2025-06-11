@@ -1,5 +1,7 @@
 const express = require("express");
 const Client = require("../models/mClients");
+const User = require("../models/mUser");
+const Notification = require("../models/Notification"); // Ajouté
 const verifyToken = require("../middleware/verifyToken");
 const router = express.Router();
 
@@ -16,6 +18,17 @@ router.post("/", verifyToken, async (req, res) => {
       socialNetworks,
       user: req.userId,
     });
+
+    // Notification in-app à la création
+    await Notification.create({
+      user: req.userId,
+      type: "client_created",
+      title: "Nouveau client ajouté",
+      message: `Le client "${name}" a été ajouté à votre liste.`,
+      link: `/clients/${client._id}`,
+      read: false
+    });
+
     res.status(201).json({ message: "Client créé avec succès", client });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -40,6 +53,17 @@ router.delete("/:id", verifyToken, async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Client non trouvé ou non autorisé." });
     }
+
+    // Notification in-app à la suppression
+    await Notification.create({
+      user: req.userId,
+      type: "client_deleted",
+      title: "Client supprimé",
+      message: `Le client a été supprimé de votre liste.`,
+      link: `/clients`,
+      read: false
+    });
+
     res.json({ message: "Client supprimé avec succès" });
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la suppression du client" });

@@ -1,7 +1,10 @@
 const express = require('express');
 const Ticket = require('../models/mTicket');
+const User = require('../models/mUser');
 const auth = require('../middleware/authMiddleware');
 const verifyToken = require('../middleware/verifyToken');
+const sendMail = require('../utils/sendMail');
+const Notification = require('../models/Notification');
 const router = express.Router();
 
 // Protéger toute la route
@@ -26,6 +29,29 @@ router.post('/', verifyToken, async (req, res) => {
         date: new Date()
       }]
     });
+    const user = await User.findById(req.user.userId);
+
+    // Notification email selon la préférence utilisateur
+    if (user.preferences?.notifications?.newTicket) {
+      await sendMail({
+        to: user.email,
+        subject: "Nouveau ticket créé",
+        html: "<p>Votre ticket a bien été créé.</p>"
+      });
+    }
+
+    // Notification in-app selon la préférence utilisateur
+    if (user.preferences?.notifications?.realTime) {
+      await Notification.create({
+        user: user._id,
+        type: "ticket_created",
+        title: "Ticket créé", // Ajout du champ title
+        message: `Votre ticket "${subject}" a été créé.`,
+        link: `/tickets/${ticket._id}`,
+        read: false
+      });
+    }
+
     res.status(201).json({ message: "Ticket créé avec succès", ticket });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -87,6 +113,17 @@ router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const deleted = await Ticket.findOneAndDelete({ _id: req.params.id, user: req.userId });
     if (!deleted) return res.status(404).json({ message: "Ticket non trouvé" });
+
+    // Notification in-app à la suppression du ticket
+    await Notification.create({
+      user: req.userId,
+      type: "ticket_deleted",
+      title: "Ticket supprimé",
+      message: `Votre ticket a été supprimé.`,
+      link: `/tickets`,
+      read: false
+    });
+
     res.json({ message: "Ticket supprimé avec succès" });
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la suppression du ticket" });

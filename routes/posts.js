@@ -1,6 +1,9 @@
 const express = require('express');
 const Publication = require('../models/mPosts');
+const User = require('../models/mUser');
 const verifyToken = require('../middleware/verifyToken');
+const sendMail = require('../utils/sendMail');
+const Notification = require('../models/Notification');
 const router = express.Router();
 
 // Création d'un post
@@ -47,6 +50,30 @@ router.post('/', verifyToken, async (req, res) => {
       user: req.userId
     });
 
+    // Récupère l'utilisateur pour ses préférences
+    const user = await User.findById(req.userId);
+
+    // Notification email si postReminders activé et post programmé
+    if (status === "schedule" && user?.preferences?.notifications?.postReminders) {
+      await sendMail({
+        to: user.email,
+        subject: "Rappel : Post programmé",
+        html: `<p>Votre post "${title}" est programmé pour le ${new Date(scheduledAt).toLocaleString()}.</p>`
+      });
+    }
+
+    // Notification in-app si realTime activé et post programmé
+    if (status === "schedule" && user?.preferences?.notifications?.realTime) {
+      await Notification.create({
+        user: user._id,
+        type: "post_scheduled",
+        title: "Post programmé", // Ajout du champ title
+        message: `Votre post "${title}" est programmé pour le ${new Date(scheduledAt).toLocaleString()}.`,
+        link: `/posts/${publication._id}`,
+        read: false
+      });
+    }
+
     res.status(201).json({
       message: "Post créé avec succès",
       post: publication
@@ -90,6 +117,17 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ message: "Post non trouvé ou non autorisé." });
     }
+
+    // Notification in-app à la suppression du post (suggestion ajoutée)
+    await Notification.create({
+      user: req.userId,
+      type: "post_deleted",
+      title: "Post supprimé",
+      message: `Votre post "${deleted.title}" a été supprimé.`,
+      link: `/posts`,
+      read: false
+    });
+
     res.json({ message: "Post supprimé avec succès" });
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la suppression du post." });

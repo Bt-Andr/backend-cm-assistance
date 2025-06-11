@@ -3,6 +3,7 @@ const router = express.Router();
 const verifyToken = require("../middleware/verifyToken");
 const Ticket = require("../models/mTicket");
 const User = require("../models/mUser");
+const Notification = require("../models/Notification"); // Ajoute cet import en haut
 
 router.get("/", verifyToken, async (req, res) => {
   try {
@@ -153,20 +154,11 @@ router.get("/", verifyToken, async (req, res) => {
     });
     // ----------------------------------------------------------------------
 
-    // Exemple de notifications dynamiques (à adapter selon ta logique)
-    const notifications = [
-      {
-        title: "Nouveau ticket reçu",
-        time: "il y a 5 minutes",
-        type: "open"
-      },
-      {
-        title: "Ticket résolu",
-        time: "il y a 1 heure",
-        type: "closed"
-      }
-      // ...ajoute d'autres notifications dynamiques ici...
-    ];
+    // Récupère les notifications in-app réelles de l'utilisateur (par exemple, les 10 plus récentes)
+    const notifications = await Notification.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
 
     // Correction : Génère une URL absolue pour l'avatar si présent
     let avatarUrl = user.avatarUrl;
@@ -192,7 +184,7 @@ router.get("/", verifyToken, async (req, res) => {
         newClients: isNaN(newClients) ? 0 : newClients,
         newClientsTrend,
         newClientsIsPositive,
-        activeUsers // <-- AJOUT ICI
+        activeUsers
       },
       activities: [
         {
@@ -208,12 +200,12 @@ router.get("/", verifyToken, async (req, res) => {
           type: "open"
         }
       ],
-      notifications, // <-- Ajoute cette ligne
+      notifications, // <-- Notifications réelles de la base
       user: {
         id: user._id,
         email: user.email,
         name: user.name,
-        avatarUrl, // <-- Utilise l'URL absolue ici
+        avatarUrl,
         role: user.role,
         preferences: user.preferences,
         emailVerified: user.emailVerified,

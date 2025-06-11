@@ -8,6 +8,7 @@ const ModificationHistory = require('../models/ModificationHistory'); // À cré
 const crypto = require('crypto');
 const sendMail = require('../utils/sendMail');
 const upload = require('../utils/cloudinaryStorage');
+const Notification = require('../models/Notification'); // Ajoute ceci en haut
 
 // Configurer multer pour l'upload d'avatar
 /*const storage = multer.diskStorage({
@@ -17,57 +18,20 @@ const upload = require('../utils/cloudinaryStorage');
 const upload = multer({ storage });*/
 
 // Mise à jour du profil utilisateur (JSON)
-/*router.put('/', verifyToken, async (req, res) => {
-  try {
-    const { name, email, avatarUrl, avatarFile } = req.body;
-    const userId = req.user.userId;
-
-    const updateFields = {};
-    if (name !== undefined) updateFields.name = name;
-    if (email !== undefined) updateFields.email = email;
-    if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
-    if (avatarFile !== undefined) updateFields.avatarFile = avatarFile;
-
-    const updated = await User.findByIdAndUpdate(
-      userId,
-      updateFields,
-      { new: true }
-    );
-    if (!updated) {
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
-    }
-    res.json({ message: "Profil mis à jour", user: updated });
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour du profil" });
-  }
-});*/
-
-// Upload d'avatar (multipart/form-data)
-router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
-  if (!req.file || !req.file.path) {
-    return res.status(400).json({ message: "Aucun fichier envoyé" });
-  }
-  // L'URL Cloudinary est dans req.file.path
-  res.json({ url: req.file.path, filename: req.file.filename });
-});
-
 router.put('/', verifyToken, async (req, res) => {
   try {
     const { name, email, avatarUrl, avatarFile } = req.body;
     const userId = req.user.userId;
 
-    // Prépare les champs à modifier
     const updateFields = {};
     if (name !== undefined) updateFields.name = name;
     if (email !== undefined) updateFields.email = email;
     if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
     if (avatarFile !== undefined) updateFields.avatarFile = avatarFile;
 
-    // Génère un token et une date d'expiration (24 heures)
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 1440 * 60 * 1000);
 
-    // Stocke la demande
     const pendingUpdate = await PendingUserUpdate.create({
       userId,
       updateFields,
@@ -76,7 +40,7 @@ router.put('/', verifyToken, async (req, res) => {
     });
 
     // Envoie le mail de confirmation
-    const confirmUrl = `https://cm-assistance-frontend.vercel.app/profile/confirm-update?token=${token}`;
+    const confirmUrl = `https://localhost:8080/profile/confirm-update?token=${token}`;
     try {
       await sendMail({
         to: req.user.email,
@@ -89,9 +53,19 @@ router.put('/', verifyToken, async (req, res) => {
           <p>Ce lien expirera dans 24 heures.</p>
         `
       });
+
+      // Notification in-app
+      await Notification.create({
+        user: userId,
+        type: "profile_update_requested",
+        title: "Modification de profil demandée", // Ajout du champ title
+        message: "Une demande de modification de profil a été initiée. Vérifiez votre boîte mail pour confirmer.",
+        link: "/settings",
+        read: false
+      });
+
       res.status(200).json({ message: "Mail de confirmation envoyé. Veuillez vérifier votre boîte mail." });
     } catch (mailErr) {
-      // Si l'envoi du mail échoue, supprime la demande en attente
       await PendingUserUpdate.deleteOne({ _id: pendingUpdate._id });
       console.error("Erreur lors de l'envoi du mail de confirmation :", mailErr);
       res.status(500).json({ message: "Erreur lors de l'envoi du mail de confirmation. Veuillez réessayer." });
@@ -100,6 +74,15 @@ router.put('/', verifyToken, async (req, res) => {
     console.error("Erreur lors de la demande de modification :", err);
     res.status(500).json({ message: "Erreur lors de la demande de modification." });
   }
+});
+
+// Upload d'avatar (multipart/form-data)
+router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
+  if (!req.file || !req.file.path) {
+    return res.status(400).json({ message: "Aucun fichier envoyé" });
+  }
+  // L'URL Cloudinary est dans req.file.path
+  res.json({ url: req.file.path, filename: req.file.filename });
 });
 
 // Confirmation de la modification via le lien reçu par mail
@@ -164,7 +147,6 @@ router.post('/password', verifyToken, async (req, res) => {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Stocke la demande de changement de mot de passe
     await PendingUserUpdate.create({
       userId,
       updateFields: { password: newPassword },
@@ -172,8 +154,8 @@ router.post('/password', verifyToken, async (req, res) => {
       expiresAt
     });
 
-    // Envoie le mail de confirmation
-    const confirmUrl = `https://cm-assistance-frontend.vercel.app/profile/confirm-update?token=${token}`;
+    // Ici, NE PAS refaire `const user = ...`
+    // Utilise simplement `user.email` pour l'envoi du mail
     await sendMail({
       to: user.email,
       subject: "Confirmation de changement de mot de passe",
@@ -185,10 +167,57 @@ router.post('/password', verifyToken, async (req, res) => {
       `
     });
 
+    // Notification in-app
+    await Notification.create({
+      user: userId,
+      type: "password_update_requested",
+      title: "Changement de mot de passe demandé", // Ajout du champ title
+      message: "Une demande de changement de mot de passe a été initiée. Vérifiez votre boîte mail pour confirmer.",
+      link: "/settings",
+      read: false
+    });
+
     res.status(200).json({ message: "Mail de confirmation envoyé. Veuillez vérifier votre boîte mail." });
   } catch (err) {
     console.error("Erreur lors de la demande de changement de mot de passe :", err);
     res.status(500).json({ message: "Erreur lors de la demande de changement de mot de passe." });
+  }
+});
+
+// Mise à jour des préférences de notifications de l'utilisateur connecté
+router.put('/preferences', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { notifications } = req.body;
+
+    if (!notifications || typeof notifications !== "object") {
+      return res.status(400).json({ message: "Préférences de notifications invalides." });
+    }
+
+    const updated = await User.findByIdAndUpdate(
+      userId,
+      { "preferences.notifications": notifications },
+      { new: true, upsert: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    // Notification in-app (optionnelle)
+    await Notification.create({
+      user: userId,
+      type: "preferences_updated",
+      title: "Préférences mises à jour", // Ajout du champ title
+      message: "Vos préférences de notifications ont été mises à jour.",
+      link: "/settings",
+      read: false
+    });
+
+    res.json({ message: "Préférences de notifications mises à jour.", notifications: updated.preferences.notifications });
+  } catch (err) {
+    console.error("Erreur lors de la mise à jour des préférences de notifications :", err);
+    res.status(500).json({ message: "Erreur lors de la mise à jour des préférences de notifications." });
   }
 });
 
