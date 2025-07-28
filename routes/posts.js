@@ -3,7 +3,7 @@ const Publication = require('../models/mPosts');
 const User = require('../models/mUser');
 const verifyToken = require('../middleware/verifyToken');
 const sendMail = require('../utils/sendMail');
-const Notification = require('../models/Notification');
+const { createNotificationIfAllowed } = require('../utils/notificationUtils'); // Utilitaire centralisé
 const router = express.Router();
 
 // Création d'un post
@@ -63,14 +63,13 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     // Notification in-app si realTime activé et post programmé
-    if (status === "schedule" && user?.preferences?.notifications?.realTime) {
-      await Notification.create({
-        user: user._id,
+    if (status === "schedule") {
+      await createNotificationIfAllowed({
+        userId: user._id,
         type: "post_scheduled",
-        title: "Post programmé", // Ajout du champ title
+        title: "Post programmé",
         message: `Votre post "${title}" est programmé pour le ${new Date(scheduledAt).toLocaleString()}.`,
         link: `/posts/${publication._id}`,
-        read: false
       });
     }
 
@@ -118,14 +117,13 @@ router.delete('/:id', verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Post non trouvé ou non autorisé." });
     }
 
-    // Notification in-app à la suppression du post (suggestion ajoutée)
-    await Notification.create({
-      user: req.userId,
+    // Notification in-app à la suppression du post (respecte la préférence realTime)
+    await createNotificationIfAllowed({
+      userId: req.userId,
       type: "post_deleted",
       title: "Post supprimé",
       message: `Votre post "${deleted.title}" a été supprimé.`,
       link: `/posts`,
-      read: false
     });
 
     res.json({ message: "Post supprimé avec succès" });

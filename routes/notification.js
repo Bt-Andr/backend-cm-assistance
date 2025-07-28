@@ -2,6 +2,7 @@ const express = require("express");
 const Notification = require("../models/Notification");
 const User = require("../models/User");
 const verifyToken = require("../middleware/verifyToken");
+const { createNotificationIfAllowed } = require("../utils/notificationUtils");
 const router = express.Router();
 
 // Toutes les routes nécessitent l'utilisateur connecté
@@ -24,14 +25,14 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { type, title, message, link } = req.body;
-    const notif = await Notification.create({
-      user: req.user.userId,
+    const notif = await createNotificationIfAllowed({
+      userId: req.user.userId,
       type,
       title,
       message,
       link,
-      read: false,
     });
+    if (!notif) return res.status(204).send(); // Pas de notif si désactivé
     res.status(201).json(notif);
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la création de la notification" });
@@ -63,27 +64,6 @@ router.patch("/read-all", async (req, res) => {
     res.json({ message: "Toutes les notifications ont été marquées comme lues" });
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la mise à jour des notifications" });
-  }
-});
-
-// Créer une notification en temps réel si l'utilisateur a activé l'option
-router.post("/real-time", async (req, res) => {
-  try {
-    const { userId, type, title, message, link } = req.body;
-    const user = await User.findById(userId);
-    if (user.preferences.notifications.realTime) {
-      await Notification.create({
-        user: userId,
-        type,
-        title,
-        message,
-        link,
-        read: false,
-      });
-    }
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la création de la notification en temps réel" });
   }
 });
 

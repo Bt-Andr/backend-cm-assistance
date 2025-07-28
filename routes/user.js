@@ -4,18 +4,11 @@ const multer = require('multer');
 const verifyToken = require('../middleware/verifyToken');
 const User = require('../models/mUser');
 const PendingUserUpdate = require('../models/PendingUserUpdate');
-const ModificationHistory = require('../models/ModificationHistory'); // À créer
+const ModificationHistory = require('../models/ModificationHistory');
 const crypto = require('crypto');
 const sendMail = require('../utils/sendMail');
 const upload = require('../utils/cloudinaryStorage');
-const Notification = require('../models/Notification'); // Ajoute ceci en haut
-
-// Configurer multer pour l'upload d'avatar
-/*const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/avatars/'),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
-});
-const upload = multer({ storage });*/
+const { createNotificationIfAllowed } = require('../utils/notificationUtils'); // Utilitaire centralisé
 
 // Mise à jour du profil utilisateur (JSON)
 router.put('/', verifyToken, async (req, res) => {
@@ -54,14 +47,13 @@ router.put('/', verifyToken, async (req, res) => {
         `
       });
 
-      // Notification in-app
-      await Notification.create({
-        user: userId,
+      // Notification in-app (respecte la préférence realTime)
+      await createNotificationIfAllowed({
+        userId,
         type: "profile_update_requested",
-        title: "Modification de profil demandée", // Ajout du champ title
+        title: "Modification de profil demandée",
         message: "Une demande de modification de profil a été initiée. Vérifiez votre boîte mail pour confirmer.",
-        link: "/settings",
-        read: false
+        link: "/settings"
       });
 
       res.status(200).json({ message: "Mail de confirmation envoyé. Veuillez vérifier votre boîte mail." });
@@ -156,6 +148,7 @@ router.post('/password', verifyToken, async (req, res) => {
 
     // Ici, NE PAS refaire `const user = ...`
     // Utilise simplement `user.email` pour l'envoi du mail
+    const confirmUrl = `https://localhost:8080/profile/confirm-update?token=${token}`;
     await sendMail({
       to: user.email,
       subject: "Confirmation de changement de mot de passe",
@@ -167,14 +160,13 @@ router.post('/password', verifyToken, async (req, res) => {
       `
     });
 
-    // Notification in-app
-    await Notification.create({
-      user: userId,
+    // Notification in-app (respecte la préférence realTime)
+    await createNotificationIfAllowed({
+      userId,
       type: "password_update_requested",
-      title: "Changement de mot de passe demandé", // Ajout du champ title
+      title: "Changement de mot de passe demandé",
       message: "Une demande de changement de mot de passe a été initiée. Vérifiez votre boîte mail pour confirmer.",
-      link: "/settings",
-      read: false
+      link: "/settings"
     });
 
     res.status(200).json({ message: "Mail de confirmation envoyé. Veuillez vérifier votre boîte mail." });
@@ -204,14 +196,13 @@ router.put('/preferences', verifyToken, async (req, res) => {
       return res.status(404).json({ message: "Utilisateur non trouvé." });
     }
 
-    // Notification in-app (optionnelle)
-    await Notification.create({
-      user: userId,
+    // Notification in-app (respecte la préférence realTime)
+    await createNotificationIfAllowed({
+      userId,
       type: "preferences_updated",
-      title: "Préférences mises à jour", // Ajout du champ title
+      title: "Préférences mises à jour",
       message: "Vos préférences de notifications ont été mises à jour.",
-      link: "/settings",
-      read: false
+      link: "/settings"
     });
 
     res.json({ message: "Préférences de notifications mises à jour.", notifications: updated.preferences.notifications });

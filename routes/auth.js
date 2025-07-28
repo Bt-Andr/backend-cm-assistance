@@ -6,6 +6,7 @@ const User = require('../models/mUser');
 const ResetToken = require('../models/ResetToken');
 const Notification = require('../models/Notification');
 const sendMail = require('../utils/sendMail');
+const { createNotificationIfAllowed } = require('../utils/notificationUtils');
 const router = express.Router();
 
 // REGISTER
@@ -50,13 +51,12 @@ router.post('/register', async (req, res) => {
     );
 
     // Notification in-app : bienvenue
-    await Notification.create({
-      user: user._id,
+    await createNotificationIfAllowed({
+      userId: user._id,
       type: "register_success",
       title: "Bienvenue !",
       message: "Votre compte a été créé avec succès.",
-      link: "/profile",
-      read: false
+      link: "/profile"
     });
 
     // Ne jamais retourner le mot de passe
@@ -94,13 +94,12 @@ router.post("/login", async (req, res) => {
     );
 
     // Notification in-app : connexion réussie (optionnel)
-    await Notification.create({
-      user: user._id,
+    await createNotificationIfAllowed({
+      userId: user._id,
       type: "login_success",
       title: "Connexion réussie",
       message: "Vous vous êtes connecté avec succès.",
-      link: "/dashboard",
-      read: false
+      link: "/dashboard"
     });
 
     // Ne jamais retourner le mot de passe
@@ -155,13 +154,12 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // Notification in-app
-    await Notification.create({
-      user: user._id,
+    await createNotificationIfAllowed({
+      userId: user._id,
       type: "password_reset_requested",
       title: "Réinitialisation demandée",
       message: "Une demande de réinitialisation de mot de passe a été initiée. Vérifiez votre boîte mail.",
-      link: "/auth",
-      read: false
+      link: "/auth"
     });
 
     res.status(200).json({ message: "Un email de réinitialisation a été envoyé." });
@@ -201,13 +199,12 @@ router.post("/reset-password", async (req, res) => {
     await ResetToken.deleteOne({ _id: resetRecord._id });
 
     // Notification in-app
-    await Notification.create({
-      user: resetRecord.userId,
+    await createNotificationIfAllowed({
+      userId: resetRecord.userId,
       type: "password_reset_success",
       title: "Mot de passe réinitialisé",
       message: "Votre mot de passe a été réinitialisé avec succès.",
-      link: "/auth",
-      read: false
+      link: "/auth"
     });
 
     res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
