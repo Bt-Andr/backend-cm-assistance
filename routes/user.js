@@ -221,4 +221,18 @@ router.put('/preferences', verifyToken, async (req, res) => {
   }
 });
 
+// Récupération des préférences de notifications de l'utilisateur connecté
+router.get('/preferences', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+    res.json({ notifications: user.preferences?.notifications || {} });
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors de la récupération des préférences." });
+  }
+});
+
 module.exports = router;
